@@ -26,9 +26,4 @@ public class HtmlContent {
         this.lvl = lvl;
     }
 
-    public void showContent() {
-        System.out.println(content);
-        System.out.println(lvl);
-    }
-
 }

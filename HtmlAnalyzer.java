@@ -7,25 +7,39 @@ import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Stack;
+
+//http://hiring.axreng.com/internship/example1.html
 
 public class HtmlAnalyzer {
 
     public static void main(String[] args)throws InterruptedException, URISyntaxException, IOException  {
-
         String url = args[0];
+        
+        String result;
 
         //HTTP REQUEST 
         String htmlContent = getURL(url);
 
         String[] str = htmlContent.split("\n");
 
+        if (malformedHtml(str)) {
+            return;
+        };
+
         ArrayList<HtmlContent> contentList = tratarHtml(str);
 
         //ordena arrayList por lvl decrescente
         Collections.sort(contentList, Comparator.comparingInt(HtmlContent::getLvl).reversed());
 
-        //printa primeiro item da lista - maior lvl, primeiro a aparecer
-        System.out.println(contentList.get(0).getContent());
+        //result = valor do primeiro item do arrayList (maior lvl e primeiro a aparecer)
+        result = contentList.get(0).getContent();
+        
+        //retira espaços antes da primeira letra da String
+        result = result.replaceFirst("^\\s+", "");
+
+        System.out.println(result);
+            
     }
 
     public static String getURL(String url)throws InterruptedException, URISyntaxException, IOException {
@@ -41,7 +55,7 @@ public class HtmlAnalyzer {
         //HTTP REQUEST
         HttpResponse<String> httpResponse = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-        //Tratamento de erro - Perguntar professor
+        //Tratamento de erro
         if (httpResponse.statusCode() != 200) {
             return "URL connection error";
         }
@@ -57,7 +71,7 @@ public class HtmlAnalyzer {
         //verificar conteudo de cada linha
         for (int i = 0; i < html.length; i++) {
 
-            //linha vazia - passar para próxima interação 
+            //linha vazia - passa para próxima interação 
             if (html[i] == "") {
                 continue;
             }
@@ -83,4 +97,47 @@ public class HtmlAnalyzer {
         return list;
     }
 
+    public static Boolean malformedHtml(String[] str) {
+
+        //pilha para armazenar tags em aberto
+        Stack<String> tagStack = new Stack<>();
+
+        for (int i = 0; i < str.length; i++) {
+            //tag encontrada
+            if (str[i].contains("<")) {
+
+                //fechamento de tag
+                if (str[i].contains("</")) {
+
+                    //tratamento de erro - remover tag de pilha vazia
+                    if (tagStack.isEmpty()) {
+                        System.out.println("malformed HTML");
+                        return true;
+                    }
+                    
+                    //tira "/" da tag de fechamento
+                    String temp = str[i].replace("/", "");
+                    
+                    //compara tags
+                    if (tagStack.lastElement().equals(temp)) {
+                        //remove elemento da pilha e passa para proxima interação for
+                        tagStack.pop();
+                        continue;
+                    }
+
+                }
+                //caso seja tag de abertura, adiciona ao topo da lista
+                tagStack.add(str[i]);
+            }
+
+        }
+
+        //se lista não está vazia, houve tag não fechada ou fechada no lugar errado
+        if (!tagStack.isEmpty()) {
+            System.out.println("malformed HTML");
+            return true;
+        }
+
+        return false;
+    }
 }
